@@ -1,9 +1,14 @@
 import { useState } from "react";
+import { Globe2 } from "lucide-react";
 import { api } from "../api/client";
+import { COUNTRIES } from "../constants/localeOptions";
 import { useChatStore } from "../store/useChatStore";
 
-export function CountryFilter() {
-  const countries = useChatStore((state) => state.countries);
+interface Props {
+  compact?: boolean;
+}
+
+export function CountryFilter({ compact = false }: Props) {
   const allCountries = useChatStore((state) => state.allCountries);
   const selectedCountries = useChatStore((state) => state.selectedCountries);
   const setCountryFilter = useChatStore((state) => state.setCountryFilter);
@@ -48,41 +53,55 @@ export function CountryFilter() {
   return (
     <div className="relative">
       <button
-        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+        className={
+          compact
+            ? "flex h-9 w-9 items-center justify-center rounded-full tg-btn-primary"
+            : "rounded-md border tg-border px-3 py-2 text-sm tg-text-muted tg-hover"
+        }
         onClick={() => setOpen((value) => !value)}
+        title="Страны"
         type="button"
       >
-        Страны
+        {compact ? <Globe2 className="h-4 w-4" /> : "Страны"}
       </button>
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 shadow-md">
-          <label className="mb-2 flex items-center gap-2 text-sm">
-            <input
-              checked={allCountries}
-              disabled={saving}
-              onChange={(event) => {
-                void toggleAllCountries(event.target.checked);
-              }}
-              type="checkbox"
-            />
-            Все страны
-          </label>
-          <div className="max-h-48 space-y-1 overflow-auto border-t pt-2">
-            {countries.map((country) => (
-              <label className="flex items-center gap-2 text-sm" key={country}>
-                <input
-                  checked={allCountries ? false : selectedCountries.includes(country)}
-                  disabled={allCountries || saving}
-                  onChange={() => {
-                    void toggleCountry(country);
-                  }}
-                  type="checkbox"
-                />
-                {country}
-              </label>
-            ))}
+        <>
+          <button
+            aria-label="Закрыть"
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+            type="button"
+          />
+          <div className="absolute top-10 right-0 z-20 w-72 rounded-xl border tg-dropdown p-3">
+            <p className="mb-2 text-sm font-medium tg-text">Предпочитаемые страны</p>
+            <label className="mb-2 flex items-center gap-2 text-sm tg-text-muted">
+              <input
+                checked={allCountries}
+                disabled={saving}
+                onChange={(event) => {
+                  void toggleAllCountries(event.target.checked);
+                }}
+                type="checkbox"
+              />
+              Все страны
+            </label>
+            <div className="tg-scroll max-h-48 space-y-1 overflow-auto border-t tg-border pt-2">
+              {COUNTRIES.map((country) => (
+                <label className="flex items-center gap-2 text-sm tg-text-muted" key={country.value}>
+                  <input
+                    checked={allCountries ? false : selectedCountries.includes(country.value)}
+                    disabled={allCountries || saving}
+                    onChange={() => {
+                      void toggleCountry(country.value);
+                    }}
+                    type="checkbox"
+                  />
+                  {country.label}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

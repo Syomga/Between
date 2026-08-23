@@ -2,12 +2,12 @@ import type { Server as HttpServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "../lib/prisma";
 import { verifyAuthToken } from "../services/authService";
-import { attachIO, emitNewMessage, getDialogueRoom, getUserRoom } from "./realtime";
+import { attachIO, emitNewMessageToParticipants, getDialogueRoom, getUserRoom } from "./realtime";
 import { createDialogueMessage } from "../services/messageService";
+import type { CreateMessageInput } from "../types/message";
 
-interface SendMessagePayload {
+interface SendMessagePayload extends CreateMessageInput {
   dialogueId: string;
-  text: string;
 }
 
 export function createSocketServer(httpServer: HttpServer): Server {
@@ -48,7 +48,13 @@ export function createSocketServer(httpServer: HttpServer): Server {
     });
 
     socket.on("send-message", async (payload: SendMessagePayload) => {
-      if (!payload?.dialogueId || !payload?.text?.trim()) {
+      if (!payload?.dialogueId) {
+        return;
+      }
+
+      const hasText = Boolean(payload.text?.trim());
+      const hasAttachment = Boolean(payload.attachment);
+      if (!hasText && !hasAttachment) {
         return;
       }
 
@@ -60,9 +66,23 @@ export function createSocketServer(httpServer: HttpServer): Server {
       }
 
       try {
-        const message = await createDialogueMessage(payload.dialogueId, userId, payload.text);
-        emitNewMessage(payload.dialogueId, message);
-      } catch {
+        const message = await createDialogueMessage(payload.dialogueId, userId, {
+          text: payload.text,
+          attachment: payload.attachment,
+        });
+
+        const participants = await prisma.dialogueParticipant.findMany({
+          where: { dialogueId: payload.dialogueId },
+          select: { userId: true },
+        });
+
+        await emitNewMessageToParticipants(
+          payload.dialogueId,
+          message,
+          participants.map((participant) => participant.userId),
+        );
+      } catch (error) {
+        console.error("send-message failed:", error);
         // No-op: malformed dialogue state or AI fallback is handled in service.
       }
     });

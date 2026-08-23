@@ -14,10 +14,18 @@ export interface UserPreview {
   nativeLang: string;
 }
 
+export interface MessageAttachment {
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface CulturalHighlight {
   originalPhrase: string;
   translation: string;
   explanation: string;
+  explanationSource?: string;
   category: "holiday" | "tradition" | "idiom" | "food" | "other";
 }
 
@@ -31,6 +39,10 @@ export interface Message {
   targetLang: string;
   culturalHighlights: CulturalHighlight[] | null;
   showOriginal: boolean;
+  attachmentUrl: string | null;
+  attachmentName: string | null;
+  attachmentMimeType: string | null;
+  attachmentSize: number | null;
   createdAt: string;
 }
 

@@ -1,40 +1,54 @@
-import { useState } from "react";
-import { api } from "../api/client";
-import { useChatStore } from "../store/useChatStore";
+import { Loader2, Shuffle } from "lucide-react";
+import { cn } from "../utils/cn";
+import { useFindRandomDialogue } from "../hooks/useFindRandomDialogue";
 
-export function FindRandomButton() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const upsertDialogue = useChatStore((state) => state.upsertDialogue);
-  const setActiveDialogueId = useChatStore((state) => state.setActiveDialogueId);
+interface Props {
+  compact?: boolean;
+  sidebar?: boolean;
+}
 
-  async function findRandom() {
-    setError(null);
-    setLoading(true);
-    try {
-      const dialogue = await api.randomDialogue();
-      upsertDialogue(dialogue);
-      setActiveDialogueId(dialogue.id);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Failed to find user");
-    } finally {
-      setLoading(false);
-    }
-  }
+export function FindRandomButton({ compact = false, sidebar = false }: Props) {
+  const { findRandom, loading, error, clearError } = useFindRandomDialogue();
+
+  const buttonClass = compact
+    ? "flex h-9 w-9 items-center justify-center rounded-full tg-btn-primary disabled:opacity-60"
+    : sidebar
+      ? "flex h-12 w-12 items-center justify-center rounded-xl tg-icon-btn disabled:opacity-60"
+      : "rounded-xl tg-btn-primary px-3 py-2 text-sm disabled:opacity-60";
 
   return (
-    <div className="flex flex-col gap-1">
-      <button
-        className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-60"
-        disabled={loading}
-        onClick={() => {
-          void findRandom();
-        }}
-        type="button"
-      >
-        Найти случайного
-      </button>
-      {error && <p className="text-xs text-red-500">{error}</p>}
-    </div>
+    <>
+      <div className="relative">
+        <button
+          className={buttonClass}
+          disabled={loading}
+          onClick={() => {
+            void findRandom();
+          }}
+          title="Найти случайного"
+          type="button"
+        >
+          {loading ? (
+            <Loader2 className={cn("animate-spin", compact ? "h-4 w-4" : "h-5 w-5")} />
+          ) : (
+            <Shuffle className={compact ? "h-4 w-4" : "h-5 w-5"} />
+          )}
+          {!compact && !sidebar && " Найти случайного"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="fixed top-4 left-1/2 z-50 flex max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border tg-dropdown px-4 py-3 text-sm text-red-500 shadow-lg">
+          <p className="flex-1">{error}</p>
+          <button
+            className="shrink-0 tg-text-muted tg-hover-text"
+            onClick={clearError}
+            type="button"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </>
   );
 }

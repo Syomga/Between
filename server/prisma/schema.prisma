@@ -53,6 +53,10 @@ model Message {
   targetLang         String
   culturalHighlights Json?
   showOriginal       Boolean  @default(false)
+  attachmentUrl      String?
+  attachmentName     String?
+  attachmentMimeType String?
+  attachmentSize     Int?
   createdAt          DateTime @default(now())
   dialogue           Dialogue @relation(fields: [dialogueId], references: [id], onDelete: Cascade)
   sender             User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)

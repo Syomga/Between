@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Dialogue, Message, User, UserPreview } from "../types/chat";
+import { normalizeClientMessage } from "../utils/messageNormalize";
 
 interface ChatState {
   currentUser: User | null;
@@ -61,30 +62,37 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       messagesByDialogueId: {
         ...state.messagesByDialogueId,
-        [dialogueId]: messages,
+        [dialogueId]: messages.map(normalizeClientMessage),
       },
     })),
   addMessage: (message) =>
     set((state) => {
-      const existing = state.messagesByDialogueId[message.dialogueId] ?? [];
-      const alreadyExists = existing.some((entry) => entry.id === message.id);
-      const messages = alreadyExists ? existing : [...existing, message];
+      if (!message.senderId) {
+        return state;
+      }
+
+      const normalized = normalizeClientMessage(message);
+      const existing = state.messagesByDialogueId[normalized.dialogueId] ?? [];
+      const alreadyExists = existing.some((entry) => entry.id === normalized.id);
+      const messages = alreadyExists
+        ? existing.map((entry) => (entry.id === normalized.id ? normalized : entry))
+        : [...existing, normalized];
       return {
         messagesByDialogueId: {
           ...state.messagesByDialogueId,
-          [message.dialogueId]: messages,
+          [normalized.dialogueId]: messages,
         },
         dialogues: sortDialogues(
           state.dialogues.map((dialogue) =>
-            dialogue.id === message.dialogueId
+            dialogue.id === normalized.dialogueId
               ? {
                   ...dialogue,
                   lastMessage: {
-                    id: message.id,
-                    originalText: message.originalText,
-                    translatedText: message.translatedText,
-                    createdAt: message.createdAt,
-                    senderId: message.senderId,
+                    id: normalized.id,
+                    originalText: normalized.originalText,
+                    translatedText: normalized.translatedText,
+                    createdAt: normalized.createdAt,
+                    senderId: normalized.senderId,
                   },
                 }
               : dialogue,

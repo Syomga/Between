@@ -4,6 +4,7 @@ import { authMiddleware } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import type { AuthenticatedRequest } from "../types/express";
 import { parsePreferredCountries } from "../lib/preferences";
+import { findRandomMatchCandidate } from "../lib/randomMatch";
 import { emitDialogueToUser } from "../socket/realtime";
 
 const createDialogueSchema = z.object({
@@ -184,23 +185,15 @@ dialoguesRouter.post("/random", async (request: AuthenticatedRequest, response, 
     }
 
     const preferredCountries = parsePreferredCountries(me.preferredCountries);
-    const candidate = await prisma.user.findFirst({
-      where: {
-        id: { not: userId },
-        nativeLang: { not: me.nativeLang },
-        ...(preferredCountries
-          ? {
-              country: {
-                in: preferredCountries,
-              },
-            }
-          : {}),
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const candidate = await findRandomMatchCandidate(userId, me);
 
     if (!candidate) {
-      response.status(404).json({ error: "No matching user found" });
+      response.status(404).json({
+        error:
+          preferredCountries && preferredCountries.length > 0
+            ? "No matching user found for selected countries"
+            : "No matching user found",
+      });
       return;
     }
 

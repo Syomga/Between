@@ -1,13 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api } from "../api/client";
 import { useChatStore } from "../store/useChatStore";
 import type { Dialogue, Message } from "../types/chat";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+import { getSocketUrl } from "../utils/apiUrl";
+
+const SOCKET_URL = getSocketUrl();
 
 export function useSocket(): Socket | null {
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const currentUser = useChatStore((state) => state.currentUser);
   const dialogues = useChatStore((state) => state.dialogues);
   const upsertDialogue = useChatStore((state) => state.upsertDialogue);
@@ -15,10 +17,12 @@ export function useSocket(): Socket | null {
 
   useEffect(() => {
     if (!currentUser) {
+      setSocket(null);
       return;
     }
 
     let active = true;
+    let nextSocket: Socket | null = null;
 
     async function connect() {
       try {
@@ -27,40 +31,44 @@ export function useSocket(): Socket | null {
           return;
         }
 
-        const socket = io(SOCKET_URL, {
+        nextSocket = io(SOCKET_URL, {
           query: { token },
         });
 
-        socket.on("connect", () => {
+        nextSocket.on("connect", () => {
           const ids = useChatStore.getState().dialogues.map((dialogue) => dialogue.id);
-          socket.emit("join-dialogues", ids);
+          nextSocket?.emit("join-dialogues", ids);
         });
 
-        socket.on("new-dialogue", (dialogue: Dialogue) => {
+        nextSocket.on("new-dialogue", (dialogue: Dialogue) => {
           upsertDialogue(dialogue);
-          socket.emit("join-dialogues", [dialogue.id]);
+          nextSocket?.emit("join-dialogues", [dialogue.id]);
         });
 
-        socket.on("new-message", (message: Message) => {
+        nextSocket.on("new-message", (message: Message) => {
+          if (!message?.senderId) {
+            return;
+          }
           addMessage(message);
         });
 
-        socketRef.current = socket;
+        setSocket(nextSocket);
       } catch {
-        socketRef.current = null;
+        if (active) {
+          setSocket(null);
+        }
       }
     }
 
     void connect();
     return () => {
       active = false;
-      socketRef.current?.disconnect();
-      socketRef.current = null;
+      nextSocket?.disconnect();
+      setSocket(null);
     };
-  }, [addMessage, currentUser, upsertDialogue]);
+  }, [addMessage, currentUser?.id, upsertDialogue]);
 
   useEffect(() => {
-    const socket = socketRef.current;
     if (!socket || !dialogues.length) {
       return;
     }
@@ -69,7 +77,7 @@ export function useSocket(): Socket | null {
       "join-dialogues",
       dialogues.map((dialogue) => dialogue.id),
     );
-  }, [dialogues]);
+  }, [dialogues, socket]);
 
-  return socketRef.current;
+  return socket;
 }

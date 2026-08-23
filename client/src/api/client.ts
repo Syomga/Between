@@ -1,6 +1,7 @@
-import type { Dialogue, Message, User, UserPreview } from "../types/chat";
+import type { Dialogue, Message, MessageAttachment, User, UserPreview } from "../types/chat";
+import { getApiUrl } from "../utils/apiUrl";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL = getApiUrl();
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -82,10 +83,31 @@ export const api = {
   getMessages(dialogueId: string) {
     return apiFetch<Message[]>(`/api/messages/${dialogueId}`);
   },
-  sendMessage(dialogueId: string, text: string) {
+  uploadAttachment(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return fetch(`${API_URL}/api/messages/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    }).then(async (response) => {
+      if (response.status === 401) {
+        throw new Error("UNAUTHORIZED");
+      }
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(body.error ?? "Upload failed");
+      }
+      return response.json() as Promise<MessageAttachment>;
+    });
+  },
+  sendMessage(
+    dialogueId: string,
+    payload: { text?: string; attachment?: MessageAttachment },
+  ) {
     return apiFetch<Message>("/api/messages", {
       method: "POST",
-      body: JSON.stringify({ dialogueId, text }),
+      body: JSON.stringify({ dialogueId, ...payload }),
     });
   },
 };

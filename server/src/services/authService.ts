@@ -45,7 +45,11 @@ export function setAuthCookie(response: Response, token: string): void {
 }
 
 export function clearAuthCookie(response: Response): void {
-  response.clearCookie(JWT_COOKIE_NAME);
+  response.clearCookie(JWT_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
 }
 
 export const authCookieName = JWT_COOKIE_NAME;

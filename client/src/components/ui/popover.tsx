@@ -25,7 +25,7 @@ export function PopoverContent({
         data-slot="popover-content"
         sideOffset={sideOffset}
         className={cn(
-          "z-50 w-80 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-md",
+          "z-50 w-80 rounded-xl border tg-dropdown p-3 text-sm tg-text",
           className,
         )}
         {...props}

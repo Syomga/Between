@@ -1,16 +1,25 @@
 interface Props {
-  value: boolean;
+  showAlternate: boolean;
   onToggle: () => void;
+  isMine?: boolean;
 }
 
-export function OriginalToggle({ value, onToggle }: Props) {
+export function OriginalToggle({ showAlternate, onToggle, isMine = false }: Props) {
+  const label = isMine
+    ? showAlternate
+      ? "Скрыть перевод"
+      : "Показать перевод"
+    : showAlternate
+      ? "Скрыть оригинал"
+      : "Показать оригинал";
+
   return (
     <button
-      className="mt-1 text-xs text-slate-500 underline"
+      className={`text-[11px] underline transition tg-text-muted tg-hover-text`}
       onClick={onToggle}
       type="button"
     >
-      {value ? "Скрыть оригинал" : "Показать оригинал"}
+      {label}
     </button>
   );
 }

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { COUNTRIES, NATIVE_LANGUAGES } from "../constants/localeOptions";
 import { useChatStore } from "../store/useChatStore";
 
 export function RegisterPage() {
@@ -17,8 +19,18 @@ export function RegisterPage() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setLoading(true);
     setError(null);
+
+    if (!form.country) {
+      setError("Выберите страну");
+      return;
+    }
+    if (!form.nativeLang) {
+      setError("Выберите родной язык");
+      return;
+    }
+
+    setLoading(true);
     try {
       const user = await api.register(form);
       setCurrentUser(user);
@@ -31,45 +43,75 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <form className="w-full max-w-sm space-y-3 rounded-xl bg-white p-6 shadow" onSubmit={submit}>
-        <h1 className="text-2xl font-semibold text-slate-900">Регистрация Between</h1>
+    <div className="relative flex min-h-screen items-center justify-center tg-bg-app p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle compact />
+      </div>
+      <form
+        className="w-full max-w-sm space-y-3 rounded-2xl border tg-card p-6"
+        onSubmit={submit}
+      >
+        <div className="mb-2">
+          <h1 className="text-2xl font-semibold tg-text">Регистрация</h1>
+          <p className="text-sm tg-text-muted">Укажите страну и родной язык</p>
+        </div>
         <input
-          className="w-full rounded-md border border-slate-300 px-3 py-2"
+          className="tg-input w-full rounded-xl px-3 py-2.5"
           onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
           placeholder="Username"
+          required
           value={form.username}
         />
         <input
-          className="w-full rounded-md border border-slate-300 px-3 py-2"
+          className="tg-input w-full rounded-xl px-3 py-2.5"
+          minLength={6}
           onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
           placeholder="Password"
+          required
           type="password"
           value={form.password}
         />
-        <input
-          className="w-full rounded-md border border-slate-300 px-3 py-2"
+        <select
+          className="tg-select w-full rounded-xl px-3 py-2.5"
           onChange={(event) => setForm((prev) => ({ ...prev, country: event.target.value }))}
-          placeholder="Country"
+          required
           value={form.country}
-        />
-        <input
-          className="w-full rounded-md border border-slate-300 px-3 py-2"
+        >
+          <option disabled value="">
+            Выберите страну
+          </option>
+          {COUNTRIES.map((country) => (
+            <option key={country.value} value={country.value}>
+              {country.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="tg-select w-full rounded-xl px-3 py-2.5"
           onChange={(event) => setForm((prev) => ({ ...prev, nativeLang: event.target.value }))}
-          placeholder="Native language"
+          required
           value={form.nativeLang}
-        />
+        >
+          <option disabled value="">
+            Выберите родной язык
+          </option>
+          {NATIVE_LANGUAGES.map((language) => (
+            <option key={language.value} value={language.value}>
+              {language.label}
+            </option>
+          ))}
+        </select>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <button
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
+          className="w-full rounded-xl tg-btn-primary px-4 py-2.5 font-medium disabled:opacity-60"
           disabled={loading}
           type="submit"
         >
           Создать аккаунт
         </button>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm tg-text-muted">
           Уже есть аккаунт?{" "}
-          <Link className="text-blue-600 underline" to="/login">
+          <Link className="tg-text-accent hover:underline" to="/login">
             Войти
           </Link>
         </p>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
 import { api } from "../api/client";
 import { useChatStore } from "../store/useChatStore";
+import { avatarColor, avatarInitial } from "../utils/avatar";
 
 export function UserSearch() {
   const [query, setQuery] = useState("");
@@ -50,26 +52,40 @@ export function UserSearch() {
   }
 
   return (
-    <div className="mb-3">
-      <input
-        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Поиск по username"
-        value={query}
-      />
-      {loading && <p className="mt-1 text-xs text-slate-500">Поиск...</p>}
+    <div>
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 tg-text-subtle" />
+        <input
+          className="tg-input w-full rounded-xl py-2.5 pr-3 pl-9 text-sm"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Поиск"
+          value={query}
+        />
+      </div>
+      {loading && <p className="mt-1 px-1 text-xs tg-text-subtle">Поиск...</p>}
       {searchResults.length > 0 && (
-        <div className="mt-2 max-h-44 overflow-auto rounded-md border border-slate-200">
+        <div className="mt-2 max-h-52 overflow-auto rounded-xl border tg-dropdown">
           {searchResults.map((user) => (
             <button
-              className="block w-full border-b border-slate-100 px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="flex w-full items-center gap-3 border-b tg-border px-3 py-2.5 text-left transition last:border-b-0 tg-hover"
               key={user.id}
               onClick={() => {
                 void createDialogue(user.id);
               }}
               type="button"
             >
-              {user.username} - {user.country}
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
+                style={{ backgroundColor: avatarColor(user.username) }}
+              >
+                {avatarInitial(user.username)}
+              </div>
+              <div>
+                <p className="text-sm font-medium tg-text">{user.username}</p>
+                <p className="text-xs tg-text-muted">
+                  {user.country} · {user.nativeLang}
+                </p>
+              </div>
             </button>
           ))}
         </div>

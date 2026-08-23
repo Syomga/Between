@@ -11,3 +11,4 @@ Thumbs.db
 .idea/
 client/dist/
 server/dist/
+server/uploads/

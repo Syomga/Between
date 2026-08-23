@@ -6,17 +6,12 @@ import { useChatStore } from "../store/useChatStore";
 export function useAuth(required: boolean): { loading: boolean } {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const currentUser = useChatStore((state) => state.currentUser);
   const setCurrentUser = useChatStore((state) => state.setCurrentUser);
 
   useEffect(() => {
     let active = true;
 
     async function loadMe() {
-      if (currentUser) {
-        setLoading(false);
-        return;
-      }
       try {
         const me = await api.me();
         if (!active) {
@@ -24,7 +19,11 @@ export function useAuth(required: boolean): { loading: boolean } {
         }
         setCurrentUser(me);
       } catch {
-        if (required && active) {
+        if (!active) {
+          return;
+        }
+        setCurrentUser(null);
+        if (required) {
           navigate("/login");
         }
       } finally {
@@ -38,7 +37,7 @@ export function useAuth(required: boolean): { loading: boolean } {
     return () => {
       active = false;
     };
-  }, [currentUser, navigate, required, setCurrentUser]);
+  }, [navigate, required, setCurrentUser]);
 
   return { loading };
 }
